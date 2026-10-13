@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>社会主义从空想到科学的发展 · 交互解析</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html {
+            width: 100vw; height: 100vh;
+            background-color: #0B1120; /* 午夜蓝黑 */
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            overflow: hidden; color: #E2E8F0; user-select: none;
+        }
+
+        /* 动态星云背景 */
+        .bg-glow {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at 30% 40%, rgba(56, 189, 248, 0.06), transparent 40%),
+                        radial-gradient(circle at 70% 60%, rgba(192, 132, 252, 0.06), transparent 40%),
+                        radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.04), transparent 40%);
+            animation: rotate 60s linear infinite; z-index: 0; pointer-events: none;
+        }
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+
+        /* 顶部标题 */
+        .header { position: absolute; top: 45px; left: 60px; z-index: 10; pointer-events: none; }
+        .header h1 {
+            font-size: 28px; font-weight: 700; margin-bottom: 10px;
+            background: linear-gradient(90deg, #F8FAFC, #94A3B8);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px;
+        }
+        .header p { font-size: 14px; color: #64748B; letter-spacing: 1px; font-weight: 300; }
+
+        /* 画布容器（负责缩放和居中） */
+        .tree-wrapper {
+            width: 100vw; height: 100vh;
+            display: flex; align-items: center;
+            position: relative; z-index: 1;
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            transform-origin: left center;
+            /* 初始状态居中布局 */
+            justify-content: center;
+        }
+
+        /* 树状布局 */
+        .h-tree { display: flex; align-items: center; }
+        
+        /* 节点卡片：毛玻璃 */
+        .h-node {
+            position: relative; padding: 12px 24px;
+            background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(16px);
+            border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            white-space: pre-wrap; max-width: 320px; word-wrap: break-word;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 14px; line-height: 1.8; letter-spacing: 0.5px;
+            cursor: pointer;
+        }
+        .h-node:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(30, 41, 59, 0.7);
+        }
+
+        /* 展开/收起图标 */
+        .toggle-icon {
+            display: inline-block; width: 18px; height: 18px; line-height: 18px;
+            text-align: center; font-size: 10px; margin-right: 8px;
+            background: rgba(255, 255, 255, 0.1); border-radius: 4px;
+            color: #94A3B8; transition: all 0.3s ease;
+        }
+        .h-node:hover .toggle-icon { background: rgba(255, 255, 255, 0.2); color: #fff; }
+
+        /* 子节点容器 */
+        .h-children {
+            display: flex; flex-direction: column; padding-left: 50px;
+            position: relative; justify-content: center;
+        }
+        /* 折叠状态：彻底隐藏，不占空间 */
+        .h-children.collapsed { display: none; }
+
+        /* 连接线 */
+        .h-children::before {
+            content: ''; position: absolute; left: 25px; top: 0; bottom: 0;
+            width: 1px; background: linear-gradient(to bottom, transparent, rgba(148, 163, 184, 0.2), transparent);
+        }
+        .h-child { position: relative; display: flex; align-items: center; margin: 8px 0; }
+        .h-child::before {
+            content: ''; position: absolute; left: -25px; top: 50%;
+            width: 25px; height: 1px; background: rgba(148, 163, 184, 0.2);
+        }
+        .h-node::after {
+            content: ''; position: absolute; right: -25px; top: 50%;
+            width: 25px; height: 1px; background: rgba(148, 163, 184, 0.2);
+        }
+
+        /* ================= 高定色彩层级 ================= */
+
+        /* 根节点 */
+        .h-node[data-level="0"] {
+            background: linear-gradient(135deg, #1E1B4B, #312E81, #4338CA);
+            border: 1px solid rgba(129, 140, 248, 0.5);
+            font-size: 22px; font-weight: 700; color: #FFFFFF;
+            box-shadow: 0 15px 50px rgba(49, 46, 129, 0.7), inset 0 1px 0 rgba(255,255,255,0.2);
+            border-radius: 20px; padding: 20px 36px;
+            letter-spacing: 3px; line-height: 1.5; cursor: pointer;
+        }
+        .h-node[data-level="0"]::after { background: rgba(129, 140, 248, 0.4); }
+        /* 根节点的图标要显示 */
+
+        /* 第一章：星空蓝 */
+        .h-node[data-chapter="1"] {
+            background: linear-gradient(90deg, rgba(56, 189, 248, 0.15) 0%, rgba(30, 41, 59, 0.5) 100%);
+            border-left: 3px solid #38BDF8; color: #E0F2FE;
+            font-size: 16px; font-weight: 600;
+            border-radius: 4px 12px 12px 4px;
+            box-shadow: -5px 0 20px rgba(56, 189, 248, 0.15);
+        }
+
+        /* 第二章：幻彩紫 */
+        .h-node[data-chapter="2"] {
+            background: linear-gradient(90deg, rgba(192, 132, 252, 0.15) 0%, rgba(30, 41, 59, 0.5) 100%);
+            border-left: 3px solid #C084FC; color: #F3E8FF;
+            font-size: 16px; font-weight: 600;
+            border-radius: 4px 12px 12px 4px;
+            box-shadow: -5px 0 20px rgba(192, 132, 252, 0.15);
+        }
+
+        /* 第三章：薄荷绿 */
+        .h-node[data-chapter="3"] {
+            background: linear-gradient(90deg, rgba(52, 211, 153, 0.15) 0%, rgba(30, 41, 59, 0.5) 100%);
+            border-left: 3px solid #34D399; color: #D1FAE5;
+            font-size: 16px; font-weight: 600;
+            border-radius: 4px 12px 12px 4px;
+            box-shadow: -5px 0 20px rgba(52, 211, 153, 0.15);
+        }
+
+        /* 叶子节点（无子节点） */
+        .h-node[data-level="3"] {
+            background: transparent; border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #94A3B8; font-size: 13px; font-weight: 300;
+            box-shadow: none; padding: 8px 18px; border-radius: 10px; cursor: default;
+        }
+        .h-node[data-level="3"]:hover { color: #E2E8F0; border-color: rgba(255, 255, 255, 0.15); background: rgba(255,255,255,0.03); }
+        .h-node[data-level="3"] .toggle-icon { display: none; }
+        .h-node[data-level="3"]::after { display: none; }
+
+        /* 底部提示 */
+        .hint {
+            position: absolute; bottom: 45px; left: 60px; z-index: 10;
+            font-size: 13px; color: #64748B; letter-spacing: 1px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .hint::before {
+            content: ''; display: block; width: 6px; height: 6px; border-radius: 50%;
+            background: #38BDF8; box-shadow: 0 0 10px #38BDF8;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    
+    <div class="header">
+        <h1>社会主义从空想到科学的发展</h1>
+        <p>恩格斯 · 交互式思维导图</p>
+    </div>
+    
+    <div class="hint">👆 点击任意节点，展开或收起详细内容</div>
+
+    <div class="tree-wrapper" id="tree-wrapper">
+        <div id="tree-container" class="h-tree"></div>
+    </div>
+
+    <script>
+        // 1. 核心数据
+        const mindData = {
+            name: '社会主义从空想到科学的发展\n恩格斯',
+            level: 0,
+            children: [
+                {
+                    name: '第一章 空想社会主义的产生及其历史作用', level: 1, chapter: 1,
+                    children: [
+                        { name: '1.1 产生的历史背景', level: 2, chapter: 1, children: [ { name: '资本主义生产方式发展', level: 3 }, { name: '资本主义社会矛盾暴露', level: 3 }, { name: '人们开始探索未来理想社会', level: 3 } ] },
+                        { name: '1.2 三大空想社会主义者及思想', level: 2, chapter: 1, children: [ { name: '圣西门：\n批判资本主义制度\n主张工人阶级领导社会\n通过计划组织实现社会改造', level: 3 }, { name: '傅立叶：\n揭露资本主义制度的合理性\n设计“法郎吉”式合作社\n强调人的自由发展', level: 3 }, { name: '欧文：\n改善工人生活\n实践合作社运动\n主张通过道德教育改造社会', level: 3 } ] },
+                        { name: '1.3 历史贡献与局限', level: 2, chapter: 1, children: [ { name: '历史贡献：\n批判资本主义制度\n提出社会主义思想\n启发无产阶级运动', level: 3 }, { name: '根本局限：\n没有发现社会发展的客观规律\n不理解阶级斗争作用\n依靠少数人的理想设计变更社会', level: 3 } ] }
+                    ]
+                },
+                {
+                    name: '第二章 哲学基础的变革', level: 1, chapter: 2,
+                    children: [
+                        { name: '2.1 旧哲学观点的局限', level: 2, chapter: 2, children: [ { name: '传统唯物主义的机械性', level: 3 }, { name: '不能正确解释社会历史发展', level: 3 }, { name: '忽视社会关系和人的实践作用', level: 3 } ] },
+                        { name: '2.2 辩证法的重新发现', level: 2, chapter: 2, children: [ { name: '黑格尔哲学：\n发现事物不断运动变化的规律\n提出辩证法的发展思想', level: 3 }, { name: '马克思、恩格斯的贡献：\n批判吸收黑格尔辩证法\n建立唯物辩证法\n揭示事物发展的内在矛盾', level: 3 } ] },
+                        { name: '2.3 自然科学的发展提供的依据', level: 2, chapter: 2, children: [ { name: '19世纪的自然科学发展：\n能量守恒与转化 / 细胞学说 / 进化论', level: 3 }, { name: '意义：\n证明自然界处于不断发展变化中\n支持辩证法的世界观', level: 3 } ] }
+                    ]
+                },
+                {
+                    name: '第三章 从空想到科学的发展', level: 1, chapter: 3,
+                    children: [
+                        { name: '3.1 唯物史观的建立', level: 2, chapter: 3, children: [ { name: '核心观点：\n社会存在决定社会意识\n生产方式决定社会发展', level: 3 }, { name: '历史动力：\n生产力与生产关系矛盾\n阶级斗争是历史发展的动力', level: 3 } ] },
+                        { name: '3.2 剩余价值理论的发现', level: 2, chapter: 3, children: [ { name: '揭示资本主义本质：\n工人的剩余价值 / 资本家占有剩余价值', level: 3 }, { name: '理论意义：\n找到资本主义矛盾根源\n为社会主义提供科学依据', level: 3 } ] },
+                        { name: '科学社会主义的构成', level: 2, chapter: 3, children: [ { name: '理论基础：\n唯物史观 / 剩余价值理论', level: 3 }, { name: '与空想社会主义区别：\n[空想] 依靠理性设计社会 / 缺乏现实基础 / 脱离社会发展规律\n[科学] 揭示社会发展规律 / 为社会主义提供现实发展的必然规律', level: 3 }, { name: '历史趋势：\n资本主义基本矛盾不断深化\n无产阶级推翻资产阶级统治', level: 3 } ] }
+                    ]
+                }
+            ]
+        };
+
+        // 2. 递归渲染（初始状态全部折叠）
+        function renderTree(node, chapter = 0) {
+            const fragment = document.createDocumentFragment();
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'h-node';
+            nodeDiv.setAttribute('data-level', node.level);
+            if (node.chapter) nodeDiv.setAttribute('data-chapter', node.chapter);
+            if (chapter && !node.chapter) nodeDiv.setAttribute('data-chapter', chapter);
+            
+            // 有子节点则添加图标（默认全部是 ▶ 闭合状态）
+            if (node.children && node.children.length > 0) {
+                const icon = document.createElement('span');
+                icon.className = 'toggle-icon';
+                icon.innerText = '▶'; 
+                nodeDiv.appendChild(icon);
+            }
+            nodeDiv.appendChild(document.createTextNode(node.name));
+            fragment.appendChild(nodeDiv);
+
+            if (node.children && node.children.length > 0) {
+                const childrenDiv = document.createElement('div');
+                childrenDiv.className = 'h-children collapsed'; // 初始全部加上 collapsed 类
+
+                node.children.forEach(child => {
+                    const childWrapper = document.createElement('div');
+                    childWrapper.className = 'h-child';
+                    childWrapper.appendChild(renderTree(child, child.chapter || chapter));
+                    childrenDiv.appendChild(childWrapper);
+                });
+                
+                fragment.appendChild(childrenDiv);
+
+                // 核心交互：点击展开/收起
+                nodeDiv.addEventListener('click', (e) => {
+                    e.stopPropagation(); // 阻止事件向上冒泡
+                    
+                    // 切换 collapsed 类，实现显示与隐藏
+                    const isCollapsed = childrenDiv.classList.toggle('collapsed');
+                    
+                    // 同步更新图标
+                    const icon = nodeDiv.querySelector('.toggle-icon');
+                    if (icon) icon.innerText = isCollapsed ? '▶' : '▼';
+                    
+                    // 等待 DOM 状态更新后，重新计算屏幕缩放与居中
+                    setTimeout(fitToScreen, 50);
+                });
+            }
+            return fragment;
+        }
+
+        const treeContainer = document.getElementById('tree-container');
+        treeContainer.appendChild(renderTree(mindData));
+
+        // 3. 自适应与居中算法
+        function fitToScreen() {
+            const wrapper = document.getElementById('tree-wrapper');
+            wrapper.style.transform = 'scale(1)'; 
+            wrapper.style.justifyContent = 'center'; // 默认居中
+            
+            const containerWidth = treeContainer.scrollWidth;
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            const containerHeight = treeContainer.scrollHeight;
+            
+            let scale = 1;
+            // 如果展开过大，自动缩小适配
+            if (containerWidth > screenWidth - 120) {
+                scale = (screenWidth - 120) / containerWidth;
+            }
+            if (containerHeight * scale > screenHeight - 120) {
+                scale = Math.min(scale, (screenHeight - 120) / containerHeight);
+            }
+            // 限制最小缩放比例，防止字看不清
+            scale = Math.max(scale, 0.5); 
+            
+            wrapper.style.transform = `scale(${scale})`;
+            
+            // 如果缩小了，为了视觉美观，让内容稍微靠左一点（因为右侧还需要展开）
+            if (scale < 1 || containerWidth > screenWidth - 200) {
+                wrapper.style.justifyContent = 'flex-start';
+                wrapper.style.paddingLeft = '60px';
+            } else {
+                wrapper.style.paddingLeft = '0';
+            }
+        }
+
+        window.addEventListener('resize', fitToScreen);
+        // 页面加载后初始化
+        setTimeout(fitToScreen, 100);
+    </script>
+</body>
+</html>
